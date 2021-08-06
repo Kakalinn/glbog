@@ -4,7 +4,17 @@
 #include <stdlib.h>
 #include <time.h>
 #include <assert.h>
+
+#ifndef WIDTH
+#define WIDTH 640
+#endif
+
+#ifndef HEIGHT
+#define HEIGHT 480
+#endif
+
 #include "thing.h"
+
 
 GLFWwindow* window;
 
@@ -72,7 +82,7 @@ GLuint load_program(GLuint vertex_shader, GLuint fragment_shader)
 	return ret;
 }
 
-void init(int width, int height) 
+void init()
 {
 	assert(glfwInit() != -1);
 
@@ -83,7 +93,7 @@ void init(int width, int height)
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
 
-	window = glfwCreateWindow(width, height, "Test", NULL, NULL);
+	window = glfwCreateWindow(WIDTH, HEIGHT, "Test", NULL, NULL);
 	
 	assert(window);
 
@@ -103,7 +113,7 @@ void end()
 
 int main()
 {
-	init(640, 480);
+	init();
 	GLuint vert, frag, prog;
 	thing* box = create_thing("data/box.thing");
 

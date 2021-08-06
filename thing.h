@@ -92,7 +92,7 @@ void thing_set_program(thing* t, GLuint prog)
 	float perspective[16];
 
 	for (i = 0; i < 16; i++) perspective[i] = 0.0;
-	perspective[0] = f_scale;
+	perspective[0] = f_scale*HEIGHT/WIDTH;
 	perspective[5] = f_scale;
 	perspective[10] = (fz_far + fz_near)/(fz_near - fz_far);
 	perspective[11] = -1.0;
