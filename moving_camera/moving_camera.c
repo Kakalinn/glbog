@@ -116,6 +116,12 @@ void init()
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CW);
 
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+	glDepthFunc(GL_LEQUAL);
+	glDepthRange(0.0, 1.0);
+	glEnable(GL_DEPTH_CLAMP);
+
 	camera.x = camera.y = camera.z = camera.phi = camera.theta = 0.0;
 	camera.r = mat4_create(NULL);
 	camera.t = mat4_create(NULL);
@@ -147,14 +153,17 @@ int main()
 {
 	init();
 	GLuint vert, frag, prog;
-	thing* box = create_thing("data/box.thing");
+	thing* box1 = create_thing("data/box.thing");
+	thing* box2 = create_thing("data/box.thing");
 
 	frag = load_shader("shaders/default.frag", GL_FRAGMENT_SHADER);
 	vert = load_shader("shaders/default.vert", GL_VERTEX_SHADER);
 	prog = load_program(vert, frag);
-	thing_set_program(box, prog);
+	thing_set_program(box1, prog);
+	thing_set_program(box2, prog);
 
-	thing_move(box, 0.0, 0.0, -3.0);
+	thing_move(box1, 0.0, 0.0, -3.0);
+	thing_move(box2, 0.0, 0.0, -5.0);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -168,10 +177,10 @@ int main()
 		if (glfwGetKey(window, GLFW_KEY_D)      == GLFW_PRESS) xx +=  0.1*cc, zz += -0.1*ss;
 		if (glfwGetKey(window, GLFW_KEY_R)      == GLFW_PRESS) yy += 0.1;
 		if (glfwGetKey(window, GLFW_KEY_F)      == GLFW_PRESS) yy += -0.1;
-		if (glfwGetKey(window, GLFW_KEY_RIGHT)  == GLFW_PRESS) pp += -0.01;
-		if (glfwGetKey(window, GLFW_KEY_LEFT)   == GLFW_PRESS) pp += 0.01;
-		if (glfwGetKey(window, GLFW_KEY_DOWN)   == GLFW_PRESS) tt += -0.01;
-		if (glfwGetKey(window, GLFW_KEY_UP)     == GLFW_PRESS) tt += 0.01;
+		if (glfwGetKey(window, GLFW_KEY_RIGHT)  == GLFW_PRESS) pp += -0.03;
+		if (glfwGetKey(window, GLFW_KEY_LEFT)   == GLFW_PRESS) pp += 0.03;
+		if (glfwGetKey(window, GLFW_KEY_DOWN)   == GLFW_PRESS) tt += -0.03;
+		if (glfwGetKey(window, GLFW_KEY_UP)     == GLFW_PRESS) tt += 0.03;
 		move_camera(xx, yy, zz, tt, pp);
 
 		// do camera
@@ -182,12 +191,13 @@ int main()
 		glClearColor(0.0, 0.0, 0.0, 0.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		thing_render(box);
+		thing_render(box1);
+		thing_render(box2);
 		glfwSwapBuffers(window);
 #endif
 	}
 
-	delete_thing(box);
+	delete_thing(box1);
 	glDeleteProgram(prog);
 	glDeleteShader(frag);
 	glDeleteShader(vert);
