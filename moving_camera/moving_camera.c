@@ -165,6 +165,8 @@ int main()
 	thing_move(box1, 0.0, 0.0, -3.0);
 	thing_move(box2, 0.0, 0.0, -5.0);
 
+	double time_start = glfwGetTime();
+	int number_of_frames = 0;
 	while (!glfwWindowShouldClose(window))
 	{
 		glfwPollEvents();
@@ -195,7 +197,9 @@ int main()
 		thing_render(box2);
 		glfwSwapBuffers(window);
 #endif
+		number_of_frames++;
 	}
+	printf("A total of %d frames were rendered in %f time\n", number_of_frames, glfwGetTime() - time_start);
 
 	delete_thing(box1);
 	glDeleteProgram(prog);

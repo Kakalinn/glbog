@@ -67,6 +67,8 @@ thing* create_thing(char* location)
 {
 	thing *r = malloc(sizeof(thing));
 	r->loc = mat4_create(NULL);
+	r->x = r->y = r->z = 0.0;
+	r->sx = r->sy = r->sz = 1.0;
 
 	thing_read_data(r, location);
 	thing_make_vbo(r);
