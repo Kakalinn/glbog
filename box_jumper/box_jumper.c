@@ -192,14 +192,17 @@ int player_is_hitting_box(thing* box)
 	printf("6\n");
 	if (z > zr + tol) return 0;
 	printf("7\n");
-	return 1;
+
+	if (fabsf(x - xl) <= tol) return 1;
+	if (fabsf(x - xr) <= tol) return 1;
+	return 2;
 }
 
 int main()
 {
 	init();
 	GLuint vert, frag, prog;
-	int i, boxes_n = 3, grounded = 0;
+	int i, j, boxes_n = 3, grounded = 0;
 	float xvel = 0.0, yvel = 0.0, zvel = 0.0, grav = -10.0, ymaxvel = 0.1;
 	thing* box[boxes_n];
 	box[0] = create_thing("data/floor.thing");
@@ -269,11 +272,11 @@ int main()
 		}
 
 		//xz-plane collision, simple
-		for (i = 0; i < boxes_n; i++) if (player_is_hitting_box(box[i])) break;
-		if (i < boxes_n) 
+		for (i = 0; i < boxes_n; i++) if (j = player_is_hitting_box(box[i]))
 		{
-			printf("collinding with box[%d]\n", i);
-			xx = 0.0, zz = 0.0;
+			printf("collinding with box[%d] of the %c variety (%d)\n", i, (j == 1 ? 'x' : 'z'), j);
+			if (j == 1) xx = 0.0;
+			else zz = 0.0;
 		}
 
 
