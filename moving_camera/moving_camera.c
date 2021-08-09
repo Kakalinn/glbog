@@ -176,15 +176,11 @@ int main()
 
 		// do camera
 		set_camera_mat4();
-		printf("camer mat4\n");
-		mat4_print(camera.t);
-		mat4_print(camera.r);
 
 		// render
 #if 1
 		glClearColor(0.0, 0.0, 0.0, 0.0);
-		glClear(GL_COLOR_BUFFER_BIT);
-		glClear(GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		thing_render(box);
 		glfwSwapBuffers(window);
