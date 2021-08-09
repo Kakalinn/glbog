@@ -184,9 +184,9 @@ int player_is_hitting_box(thing* box)
 	printf("2\n");
 	if (x > xr + tol) return 0;
 	printf("3\n");
-	if (y < yl - tol) return 0;
+	if (y < yl) return 0;
 	printf("4\n");
-	if (y > yr - tol) return 0;
+	if (y > yr) return 0;
 	printf("5\n");
 	if (z < zl - tol) return 0;
 	printf("6\n");
@@ -217,11 +217,12 @@ int main()
 	thing_set_program(box[2], prog);
 
 	thing_move(box[0], -10.0, -2.1, -10.0);
-	thing_move(box[1], 0.0, -1.1, -3.0);
-	thing_move(box[2], 0.0, -1.1, -5.0);
+	thing_move(box[1], -0.2, -1.1, -3.0);
+	thing_move(box[2], -0.2, -1.1, -4.0);
 
-	thing_scale(box[2], 2.0, 2.0, 2.0);
 	thing_scale(box[0], 200.0, 1.0, 200.0);
+	thing_scale(box[1], 0.5, 0.5, 0.5);
+	thing_scale(box[2], 1.0, 1.0, 1.0);
 
 	double time_current, time_elapsed, time_start = glfwGetTime(), time_last = glfwGetTime();
 	int number_of_frames = 0;
@@ -234,10 +235,10 @@ int main()
 		// handle inputs
 		float xx = 0.0, yy = 0.0, zz = 0.0, tt = 0.0, pp = 0.0, ss = sin(camera.phi), cc = cos(camera.phi);
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) break;
-		if (glfwGetKey(window, GLFW_KEY_W)      == GLFW_PRESS) xx += -6.0*ss, zz += -6.0*cc;
-		if (glfwGetKey(window, GLFW_KEY_A)      == GLFW_PRESS) xx += -6.0*cc, zz +=  6.0*ss;
-		if (glfwGetKey(window, GLFW_KEY_S)      == GLFW_PRESS) xx +=  6.0*ss, zz +=  6.0*cc;
-		if (glfwGetKey(window, GLFW_KEY_D)      == GLFW_PRESS) xx +=  6.0*cc, zz += -6.0*ss;
+		if (glfwGetKey(window, GLFW_KEY_W)      == GLFW_PRESS) xx += -4.0*ss, zz += -4.0*cc;
+		if (glfwGetKey(window, GLFW_KEY_A)      == GLFW_PRESS) xx += -4.0*cc, zz +=  4.0*ss;
+		if (glfwGetKey(window, GLFW_KEY_S)      == GLFW_PRESS) xx +=  4.0*ss, zz +=  4.0*cc;
+		if (glfwGetKey(window, GLFW_KEY_D)      == GLFW_PRESS) xx +=  4.0*cc, zz += -4.0*ss;
 		//if (glfwGetKey(window, GLFW_KEY_R)      == GLFW_PRESS) yy += 0.1;
 		//if (glfwGetKey(window, GLFW_KEY_F)      == GLFW_PRESS) yy += -0.1;
 		if (glfwGetKey(window, GLFW_KEY_RIGHT)  == GLFW_PRESS) pp += -2.0;
@@ -250,7 +251,7 @@ int main()
 		{
 			for (i = 0; i < boxes_n; i++) if (player_is_on_top_of_box(box[i])) break;
 			if (i == boxes_n) grounded = 0;
-			if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) yvel = 4.0, grounded = 0;
+			if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) yvel = 3.0, grounded = 0;
 		}
 		else
 		{
