@@ -1,0 +1,5 @@
+ * The w-coordinate should be 1 for locations.
+ * Not indexing all vertice when using indexed rendering.
+ * |stride| in glVertexAttribPointer is in bytes (use sizeof(...)).
+ * |stride| in glVertexAttribPointer is the WHOLE stride, even though 0 means tight packing.
+ * Face culling didn't work because I called the gl* functions before linking with GLEW.
