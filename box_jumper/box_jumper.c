@@ -110,6 +110,12 @@ void init()
 	assert(window);
 
 	glfwMakeContextCurrent(window);
+
+#ifdef MOUSE_MOVEMENT
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	if (glfwRawMouseMotionSupported()) glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+#endif
+
 	assert(glewInit() == GLEW_OK);
 
 	glEnable(GL_CULL_FACE);
@@ -145,7 +151,7 @@ float clampf(float x, float l, float r)
 void move_camera(float x, float y, float z, float theta, float phi)
 {
 	camera.x += x, camera.y += y, camera.z += z, camera.theta += theta, camera.phi += phi;
-	camera.theta = clampf(camera.theta, -M_PI, M_PI);
+	camera.theta = clampf(camera.theta, -M_PI/2.0, M_PI/2.0);
 	camera.phi = fmodf(camera.phi, 2*M_PI);
 }
 
@@ -198,6 +204,68 @@ int player_is_hitting_box(thing* box)
 	return 2;
 }
 
+//c -s | x
+//s  c | y
+//
+//x*c - s*y
+//x*s + c*y
+
+float collision_tol = 0.001;
+#if 0
+int line_segment_collision_check(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4, float* x, float* y, float* t)
+{ // Essentially, does the linesegment <(x1, y1), (x2, y2)> intersect with <(x3, y3), (x4, y4)>.
+	// And if so, where?
+	// The player is going from point (x3, y3) to (x4, y4).
+	x2 -= x1, y2 -= y1, x3 -= x1, y3 -= y1, x4 -= x1, y4 -= y1;
+	float l = hypotf(x2, y2);
+	float c = x2/l, s = -y2/l;
+	float x5 = x3*c - y3*s, y5 - x3*s + y3*c,
+		  x6 = x4*c - y4*s, y6 - x4*s + y4*c;
+	if (fabsf(y5) < collision_tol)
+	{
+		*x = x3, *y = y5;
+		return 1;
+	}
+	if (y5 < 0.0 && y6 < 0.0) return 0;
+	if (y5 > 0.0 && y6 > 0.0) return 0;
+	*t = y5/(y5 + y6);
+	float tx = x6*(*t) + x5*(1.0 - *t);
+	if (tx < -collision_tolerance) return 0;
+	if (tx > l + collision_tolerance) return 0;
+	*x = x4*t + x3*(1.0 - t), *y = y4*t + y3*(1.0 - t);
+	return 1;
+}
+
+int plane_collision_check(float x, float y, float z, float xv, float yv, float zv, float px1, float py1, float pz1, float px2, float py2, float pz2)
+{ // The player is at (x, y, z) with velocity vector (xv, yv, zv).
+	// The velocity vector is distance travlled in the next tick.
+	// The collision plane is ...
+	if (y > py2 + collision_tolerance) return 0; // above collision.
+	if (y < py1 - collision_tolerance) return 0; // below collision.
+
+}
+#endif
+
+int line_plane_intersection(
+		float xl, float yl, float zl, float xv, float yv, float zv,
+		float xp, float yp, float zp, float xn, float yn, float zn, float* t)
+{ // Line through (xl, yl, zl) in direction (xv, yv, zv).
+	// Plane through (xp, yp, zp) with normal (xn, yn, zn).
+	// They intersect at (xl, yl, zl) + t*(xv, xy, zy) if it retruns 1.
+	// There is not precisly one intersection if it returns 0.
+	float d = (xl*xn + yl*yn + zl*zn);
+	if (fabsf(d) < collision_tol) return 0;
+	*t = (xn*(xp - xl) + yn*(yp - yl) + zn*(zp - zl))/d;
+}
+
+void vector_clamping(float* x, float* y, float px, float py)
+{ // (x, y), and (px, py) are all vectors.
+	// (px, py) needs to be normal.
+	// All of (x, y) pointing in the direction of (px, py) is removed).
+	float d = *x*px + *y*py;
+	*x -= px*d, *y -= py*d;
+}
+
 int main()
 {
 	init();
@@ -226,6 +294,10 @@ int main()
 
 	double time_current, time_elapsed, time_start = glfwGetTime(), time_last = glfwGetTime();
 	int number_of_frames = 0;
+#ifdef MOUSE_MOVEMENT
+	double mouse_x, mouse_y, sensitivity = 0.1;
+	glfwGetCursorPos(window, &mouse_x, &mouse_y);
+#endif
 	while (!glfwWindowShouldClose(window))
 	{
 		//printf(">>>>>> %f %f %f (%f %f %f)\n", camera.x, camera.y, camera.z, xvel, yvel, zvel);
@@ -245,6 +317,14 @@ int main()
 		if (glfwGetKey(window, GLFW_KEY_LEFT)   == GLFW_PRESS) pp +=  2.0;
 		if (glfwGetKey(window, GLFW_KEY_DOWN)   == GLFW_PRESS) tt += -2.0;
 		if (glfwGetKey(window, GLFW_KEY_UP)     == GLFW_PRESS) tt +=  2.0;
+
+#ifdef MOUSE_MOVEMENT
+		double mouse_xx, mouse_yy;
+		glfwGetCursorPos(window, &mouse_xx, &mouse_yy);
+		pp += (mouse_x - mouse_xx)*sensitivity;
+		tt += (mouse_y - mouse_yy)*sensitivity;
+		mouse_x = mouse_xx, mouse_y = mouse_yy;
+#endif
 
 		// physics
 		if (grounded)
@@ -272,16 +352,26 @@ int main()
 			yy = yvel;
 		}
 
-		//xz-plane collision, simple
-		for (i = 0; i < boxes_n; i++) if (j = player_is_hitting_box(box[i]))
+		//collisions with the boxes, simple
+		float movement_time = time_elapsed;
+#if 0
+		for (i = 0; i < boxes_n; i++)
 		{
+			float t;
+			if (line_plane_intersection(camera.x, camera.y, camera.z, xvel, yvel, zvel, box[i].x, box[i].y, box[i].z, 1.0, 0.0, 0.0, &t))
+			{
+				movement_time = fminf(movement_time, t);
+			}
+
+
 			printf("collinding with box[%d] of the %c variety (%d)\n", i, (j == 1 ? 'x' : 'z'), j);
 			if (j == 1) xx = 0.0;
 			else zz = 0.0;
 		}
+#endif
 
 
-		move_camera(xx*time_elapsed, yy*time_elapsed, zz*time_elapsed, tt*time_elapsed, pp*time_elapsed);
+		move_camera(xx*movement_time, yy*movement_time, zz*movement_time, tt*time_elapsed, pp*time_elapsed);
 
 
 		// do camera
