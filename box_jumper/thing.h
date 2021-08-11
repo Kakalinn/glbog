@@ -15,7 +15,7 @@ typedef struct
 	int n;      // |data| stores |n| values.
 	int m;      // |ind| stores |m| values.
 	GLuint data_vbo, ind_vbo, vao, prog;
-	GLuint perspective_uni, rotate_camera_uni, center_camera_uni, place_in_world_uni;
+	GLuint perspective_uni, rotate_camera_uni, center_camera_uni, place_in_world_uni, light_intensity_uni, light_ambient_uni, light_pos_uni;
 } thing;
 
 void thing_read_data(thing *t, char* location)
@@ -26,7 +26,7 @@ void thing_read_data(thing *t, char* location)
 	int i, n, m; 
 
 	fscanf(file, "%d", &n);
-	t->data = malloc(sizeof(float)*(t->n = n*7));
+	t->data = malloc(sizeof(float)*(t->n = n*10));
 	for (i = 0; i < t->n; i++) fscanf(file, "%f", &(t->data[i]));
 
 	fscanf(file, "%d", &m);
@@ -56,9 +56,11 @@ void thing_make_vao(thing *t)
 	glBindBuffer(GL_ARRAY_BUFFER, t->data_vbo);
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
 	size_t offset = 3*sizeof(float);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7*sizeof(float), 0);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7*sizeof(float), (void*)offset);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 10*sizeof(float), 0);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 10*sizeof(float), (void*)(3*sizeof(float)));
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 10*sizeof(float), (void*)(7*sizeof(float)));
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, t->ind_vbo);
 	glBindVertexArray(0);
 }
@@ -99,10 +101,16 @@ void thing_set_program(thing* t, GLuint prog)
 	t->center_camera_uni = glGetUniformLocation(t->prog, "center_camera");
 	t->rotate_camera_uni = glGetUniformLocation(t->prog, "rotate_camera");
 	t->place_in_world_uni = glGetUniformLocation(t->prog, "place_in_world");
-	assert(t->perspective_uni != -1);
-	assert(t->rotate_camera_uni != -1);
-	assert(t->center_camera_uni != -1);
-	assert(t->place_in_world_uni != -1);
+	t->light_intensity_uni = glGetUniformLocation(t->prog, "light_intensity");
+	t->light_ambient_uni = glGetUniformLocation(t->prog, "light_ambient");
+	t->light_pos_uni = glGetUniformLocation(t->prog, "light_pos");
+	//assert(t->perspective_uni != -1);
+	//assert(t->rotate_camera_uni != -1);
+	//assert(t->center_camera_uni != -1);
+	//assert(t->place_in_world_uni != -1);
+	//assert(t->light_intensity_uni != -1);
+	//assert(t->light_ambient_uni != -1);
+	//assert(t->light_pos_uni != -1);
 
 	float f_scale = calc_f_scale(M_PI/2), fz_near = 0.1, fz_far = 1000.0;
 	int i;
@@ -126,6 +134,11 @@ void thing_set_program(thing* t, GLuint prog)
 
 	glUseProgram(t->prog);
 	glUniformMatrix4fv(t->perspective_uni, 1, GL_FALSE, perspective);
+
+	glUniform4f(t->light_intensity_uni, 0.8, 0.8, 0.8, 1.0);
+	glUniform4f(t->light_ambient_uni, 0.2, 0.2, 0.2, 1.0);
+	glUniform4f(t->light_pos_uni, 0.0, 1.0, 0.0, 1.0);
+
 	glUseProgram(0);
 }
 

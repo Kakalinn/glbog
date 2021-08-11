@@ -158,6 +158,7 @@ void move_camera(float x, float y, float z, float theta, float phi)
 }
 
 
+float height = 0.3;
 int player_is_on_top_of_box(thing* box)
 { // |box| must be a box.
 	float xl = box->x, xr = box->x + box->sx,
@@ -165,7 +166,6 @@ int player_is_on_top_of_box(thing* box)
 		  zl = box->z, zr = box->z + box->sz,
 		  x = camera.x, y = camera.y, z = camera.z;
 	float tol = 0.0;
-	float height = 0.1;
 	if (x < xl - tol) return 0;
 	if (x > xr + tol) return 0;
 	if (z < zl - tol) return 0;
@@ -359,7 +359,7 @@ int main()
 	double time_current, time_elapsed, time_start = glfwGetTime(), time_last = glfwGetTime();
 	int number_of_frames = 0;
 #ifdef MOUSE_MOVEMENT
-	double mouse_x, mouse_y, sensitivity = 0.1;
+	double mouse_x, mouse_y, sensitivity = 0.05;
 	glfwGetCursorPos(window, &mouse_x, &mouse_y);
 #endif
 	int is_first_ground_frame = 1;
@@ -422,7 +422,7 @@ int main()
 				for (i = 0; i < boxes_n; i++) if (player_is_on_top_of_box(box[i]))
 				{
 					vel[1] = 0.0;
-					camera.y = box[i]->y + box[i]->sy + 0.1;
+					camera.y = box[i]->y + box[i]->sy + height;
 					grounded = 1;
 					break;
 				}
