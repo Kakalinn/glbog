@@ -19,7 +19,9 @@ struct camera
 {
 	// |phi| is vertical angle, |theta| is horizontal.
 	float x, y, z, phi, theta;
-	 mat4 *r, *t;
+	float hx, hy, hz;
+	int headlight;
+	mat4 *r, *t;
 } camera;
 #include "thing.h"
 
@@ -363,6 +365,8 @@ int main()
 	glfwGetCursorPos(window, &mouse_x, &mouse_y);
 #endif
 	int is_first_ground_frame = 1;
+	int q_pressed = 0;
+	camera.headlight = 1;
 	while (!glfwWindowShouldClose(window))
 	{
 		printf(">> xz-plane velocity: %f\n", hypot(vel[0], vel[2]));
@@ -380,6 +384,14 @@ int main()
 		if (glfwGetKey(window, GLFW_KEY_A)      == GLFW_PRESS) wishdir[0] += -cc, wishdir[2] +=  ss;
 		if (glfwGetKey(window, GLFW_KEY_S)      == GLFW_PRESS) wishdir[0] +=  ss, wishdir[2] +=  cc;
 		if (glfwGetKey(window, GLFW_KEY_D)      == GLFW_PRESS) wishdir[0] +=  cc, wishdir[2] += -ss;
+		if (glfwGetKey(window, GLFW_KEY_Q)      == GLFW_RELEASE) q_pressed = 0;
+		if (!q_pressed && glfwGetKey(window, GLFW_KEY_Q)      == GLFW_PRESS)
+		{ // drop and relocate light.
+			q_pressed = 1;
+			if (camera.headlight) camera.headlight = 0, camera.hx = camera.x, camera.hy = camera.y, camera.hz = camera.z;
+			else camera.headlight = 1;
+		}
+
 		printf(">> 1 %f %f %f (%f)\n", wishdir[0], wishdir[1], wishdir[2], vec3_dot(wishdir, wishdir));
 		vec3_normalize(wishdir);
 		//vec3_scale(wishdir, 360.0);
@@ -404,7 +416,7 @@ int main()
 		if (grounded)
 		{
 			if (is_first_ground_frame) is_first_ground_frame = 0;
-			else friction(6.0, time_elapsed);
+			else friction(6.0, time_elapsed); // Doesn't apply friction for the first frame on ground. This allows easier chaining of strafe jumps.
 
 			accelerate(wishdir, time_elapsed);
 			for (i = 0; i < boxes_n; i++) if (player_is_on_top_of_box(box[i])) break;
@@ -459,7 +471,7 @@ int main()
 
 		// render
 #if 1
-		glClearColor(0.0, 0.0, 0.0, 0.0);
+		glClearColor(0.0, 0.0, 0.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		for (i = 0; i < boxes_n; i++) thing_render(box[i]);

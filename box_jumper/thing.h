@@ -15,7 +15,8 @@ typedef struct
 	int n;      // |data| stores |n| values.
 	int m;      // |ind| stores |m| values.
 	GLuint data_vbo, ind_vbo, vao, prog;
-	GLuint perspective_uni, rotate_camera_uni, center_camera_uni, place_in_world_uni, light_intensity_uni, light_ambient_uni, light_pos_uni;
+	GLuint perspective_uni, rotate_camera_uni, center_camera_uni, place_in_world_uni,
+		   light_intensity_uni, light_ambient_uni, light_pos_uni, light_attn_uni;
 } thing;
 
 void thing_read_data(thing *t, char* location)
@@ -104,6 +105,7 @@ void thing_set_program(thing* t, GLuint prog)
 	t->light_intensity_uni = glGetUniformLocation(t->prog, "light_intensity");
 	t->light_ambient_uni = glGetUniformLocation(t->prog, "light_ambient");
 	t->light_pos_uni = glGetUniformLocation(t->prog, "light_pos");
+	t->light_attn_uni = glGetUniformLocation(t->prog, "light_attn");
 	//assert(t->perspective_uni != -1);
 	//assert(t->rotate_camera_uni != -1);
 	//assert(t->center_camera_uni != -1);
@@ -111,6 +113,7 @@ void thing_set_program(thing* t, GLuint prog)
 	//assert(t->light_intensity_uni != -1);
 	//assert(t->light_ambient_uni != -1);
 	//assert(t->light_pos_uni != -1);
+	//assert(t->light_attn_uni != -1);
 
 	float f_scale = calc_f_scale(M_PI/2), fz_near = 0.1, fz_far = 1000.0;
 	int i;
@@ -137,7 +140,7 @@ void thing_set_program(thing* t, GLuint prog)
 
 	glUniform4f(t->light_intensity_uni, 0.8, 0.8, 0.8, 1.0);
 	glUniform4f(t->light_ambient_uni, 0.2, 0.2, 0.2, 1.0);
-	glUniform4f(t->light_pos_uni, 0.0, 1.0, 0.0, 1.0);
+	glUniform1f(t->light_attn_uni, 0.1);
 
 	glUseProgram(0);
 }
@@ -152,6 +155,9 @@ void thing_render(thing* t)
 	glUniformMatrix4fv(t->place_in_world_uni, 1, GL_TRUE, t->loc->m);
 	glUniformMatrix4fv(t->center_camera_uni, 1, GL_TRUE, camera.t->m);
 	glUniformMatrix4fv(t->rotate_camera_uni, 1, GL_TRUE, camera.r->m);
+	if (camera.headlight) glUniform3f(t->light_pos_uni, camera.x, camera.y, camera.z);
+	else glUniform3f(t->light_pos_uni, camera.hx, camera.hy, camera.hz);
+	//glUniform3f(t->light_pos_uni, 0.0, 10.0, 0.0);
 	glDrawElements(GL_TRIANGLES, t->m, GL_UNSIGNED_SHORT, 0);
 	glBindVertexArray(0);
 	glUseProgram(0);
