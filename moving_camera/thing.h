@@ -82,6 +82,11 @@ void thing_move(thing* t, float x, float y, float z)
 	t->x += x, t->y += y, t->z += z;
 }
 
+void thing_scale(thing* t, float sx, float sy, float sz)
+{
+	t->sx += sx, t->sy += sy, t->sz += sz;
+}
+
 float calc_f_scale(float fov)
 { // FOV is in radians.
     return 1.0f/tanf(fov/2.0);
@@ -94,10 +99,10 @@ void thing_set_program(thing* t, GLuint prog)
 	t->center_camera_uni = glGetUniformLocation(t->prog, "center_camera");
 	t->rotate_camera_uni = glGetUniformLocation(t->prog, "rotate_camera");
 	t->place_in_world_uni = glGetUniformLocation(t->prog, "place_in_world");
-	//assert(t->perspective_uni != -1);
-	//assert(t->rotate_camera_uni != -1);
-	//assert(t->center_camera_uni != -1);
-	//assert(t->place_in_world_uni != -1);
+	assert(t->perspective_uni != -1);
+	assert(t->rotate_camera_uni != -1);
+	assert(t->center_camera_uni != -1);
+	assert(t->place_in_world_uni != -1);
 
 	float f_scale = calc_f_scale(M_PI/2), fz_near = 1.0, fz_far = 1000.0;
 	int i;
@@ -126,7 +131,7 @@ void thing_set_program(thing* t, GLuint prog)
 
 void thing_render(thing* t)
 {
-	mat4_translate_scale(t->loc, t->x, t->y, t->z, 1.0, 1.0, 1.0);
+	mat4_translate_scale(t->loc, t->x, t->y, t->z, t->sx, t->sy, t->sz);
 	//mat4_print(t->loc);
 
 	glUseProgram(t->prog);

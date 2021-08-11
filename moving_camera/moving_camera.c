@@ -164,6 +164,7 @@ int main()
 
 	thing_move(box1, 0.0, 0.0, -3.0);
 	thing_move(box2, 0.0, 0.0, -5.0);
+	//thing_scale(box2, 1.0, 1.0, 1.0);
 
 	double time_start = glfwGetTime();
 	int number_of_frames = 0;
@@ -195,6 +196,7 @@ int main()
 
 		thing_render(box1);
 		thing_render(box2);
+
 		glfwSwapBuffers(window);
 #endif
 		number_of_frames++;
