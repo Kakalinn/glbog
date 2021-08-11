@@ -26,6 +26,8 @@ struct camera
 GLFWwindow* window;
 
 
+typedef float vec3[3];
+
 void mysleep(int ms)
 {
 	long startd = 1000*clock()/1000;
@@ -266,12 +268,74 @@ void vector_clamping(float* x, float* y, float px, float py)
 	*x -= px*d, *y -= py*d;
 }
 
+float vec3_dot(vec3 a, vec3 b)
+{
+	return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+}
+
+void vec3_scale(vec3 v, float s)
+{
+	v[0] *= s, v[1] *= s, v[2] *= s;
+}
+
+void vec3_normalize(vec3 v)
+{
+	float l = sqrt(vec3_dot(v, v));
+	if (l < 0.0001) return;
+	v[0] /= l, v[1] /= l, v[2] /= l;
+}
+
+
+vec3 vel = {0.0, 0.0, 0.0};
+
+void friction(float friction, float time)
+{
+	float low_enough = 1.0, speed = sqrt(vec3_dot(vel, vel)), drop = 0, control, newspeed, stopspeed = 0.01;
+
+	if (speed < low_enough)
+	{
+		vel[0] = vel[2] = 0.0;
+		return;
+	}
+
+	control = speed < stopspeed ? stopspeed : speed;
+	drop += control*friction*time;
+
+	newspeed = speed - drop;
+	if (newspeed < 0) newspeed = 0;
+	newspeed /= speed;
+
+	vel[0] = vel[0] * newspeed;
+	//vel[1] = vel[1] * newspeed;
+	vel[2] = vel[2] * newspeed;
+}
+
+float max_air_speed, max_speed, max_accel;
+void accelerate(vec3 wishdir, float time)
+{
+	int i;
+	float addspeed = clampf(max_speed - vec3_dot(vel, wishdir), 0.0, max_accel*time);
+	printf(">> addspeed %f\n", addspeed);
+	for (i = 0; i < 3; i++) vel[i] += addspeed*wishdir[i];
+}
+
+void air_accelerate(vec3 wishdir, float time)
+{
+	int i;
+	float addspeed = clampf(max_air_speed - vec3_dot(vel, wishdir), 0.0, max_accel*time);
+	printf(">> addspeed %f\n", addspeed);
+	for (i = 0; i < 3; i++) vel[i] += addspeed*wishdir[i];
+}
+
+
+
 int main()
 {
+	max_air_speed = 0.8, max_speed = 8.0, max_accel = 10.0*max_speed;
 	init();
 	GLuint vert, frag, prog;
 	int i, j, boxes_n = 3, grounded = 0;
-	float xvel = 0.0, yvel = 0.0, zvel = 0.0, grav = -10.0, ymaxvel = 0.1;
+	float grav = -10.0, ymaxvel = 0.1;
 	thing* box[boxes_n];
 	box[0] = create_thing("data/floor.thing");
 	box[1] = create_thing("data/box.thing");
@@ -298,21 +362,30 @@ int main()
 	double mouse_x, mouse_y, sensitivity = 0.1;
 	glfwGetCursorPos(window, &mouse_x, &mouse_y);
 #endif
+	int is_first_ground_frame = 1;
 	while (!glfwWindowShouldClose(window))
 	{
-		//printf(">>>>>> %f %f %f (%f %f %f)\n", camera.x, camera.y, camera.z, xvel, yvel, zvel);
+		printf(">> xz-plane velocity: %f\n", hypot(vel[0], vel[2]));
+		printf(">>>>>> %f %f %f (%f %f %f)\n", camera.x, camera.y, camera.z, vel[0], vel[1], vel[2]);
 		glfwPollEvents();
+
 		time_current = glfwGetTime();
 		time_elapsed = time_current - time_last;
+
 		// handle inputs
 		float xx = 0.0, yy = 0.0, zz = 0.0, tt = 0.0, pp = 0.0, ss = sin(camera.phi), cc = cos(camera.phi);
+		vec3 wishdir = {0.0, 0.0, 0.0};
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) break;
-		if (glfwGetKey(window, GLFW_KEY_W)      == GLFW_PRESS) xx += -4.0*ss, zz += -4.0*cc;
-		if (glfwGetKey(window, GLFW_KEY_A)      == GLFW_PRESS) xx += -4.0*cc, zz +=  4.0*ss;
-		if (glfwGetKey(window, GLFW_KEY_S)      == GLFW_PRESS) xx +=  4.0*ss, zz +=  4.0*cc;
-		if (glfwGetKey(window, GLFW_KEY_D)      == GLFW_PRESS) xx +=  4.0*cc, zz += -4.0*ss;
-		//if (glfwGetKey(window, GLFW_KEY_R)      == GLFW_PRESS) yy += 0.1;
-		//if (glfwGetKey(window, GLFW_KEY_F)      == GLFW_PRESS) yy += -0.1;
+		if (glfwGetKey(window, GLFW_KEY_W)      == GLFW_PRESS) wishdir[0] += -ss, wishdir[2] += -cc;
+		if (glfwGetKey(window, GLFW_KEY_A)      == GLFW_PRESS) wishdir[0] += -cc, wishdir[2] +=  ss;
+		if (glfwGetKey(window, GLFW_KEY_S)      == GLFW_PRESS) wishdir[0] +=  ss, wishdir[2] +=  cc;
+		if (glfwGetKey(window, GLFW_KEY_D)      == GLFW_PRESS) wishdir[0] +=  cc, wishdir[2] += -ss;
+		printf(">> 1 %f %f %f (%f)\n", wishdir[0], wishdir[1], wishdir[2], vec3_dot(wishdir, wishdir));
+		vec3_normalize(wishdir);
+		//vec3_scale(wishdir, 360.0);
+		printf(">> 2 %f %f %f (%f)\n", wishdir[0], wishdir[1], wishdir[2], vec3_dot(wishdir, wishdir));
+		printf("\n\n");
+
 		if (glfwGetKey(window, GLFW_KEY_RIGHT)  == GLFW_PRESS) pp += -2.0;
 		if (glfwGetKey(window, GLFW_KEY_LEFT)   == GLFW_PRESS) pp +=  2.0;
 		if (glfwGetKey(window, GLFW_KEY_DOWN)   == GLFW_PRESS) tt += -2.0;
@@ -326,22 +399,29 @@ int main()
 		mouse_x = mouse_xx, mouse_y = mouse_yy;
 #endif
 
-		// physics
+
+		// move player
 		if (grounded)
 		{
+			if (is_first_ground_frame) is_first_ground_frame = 0;
+			else friction(6.0, time_elapsed);
+
+			accelerate(wishdir, time_elapsed);
 			for (i = 0; i < boxes_n; i++) if (player_is_on_top_of_box(box[i])) break;
 			if (i == boxes_n) grounded = 0;
-			if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) yvel = 3.0, grounded = 0;
+			if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) vel[1] = 3.0, grounded = 0;
 		}
 		else
 		{
-			yvel += clampf(time_elapsed*grav, -ymaxvel, ymaxvel);
+			is_first_ground_frame = 1;
+			air_accelerate(wishdir, time_elapsed);
+			vel[1] += clampf(time_elapsed*grav, -ymaxvel, ymaxvel);
 
-			if (yvel < 0.0)
+			if (vel[1] < 0.0)
 			{
 				for (i = 0; i < boxes_n; i++) if (player_is_on_top_of_box(box[i]))
 				{
-					yvel = 0.0;
+					vel[1] = 0.0;
 					camera.y = box[i]->y + box[i]->sy + 0.1;
 					grounded = 1;
 					break;
@@ -349,7 +429,7 @@ int main()
 			}
 			if (i < boxes_n) printf(">> landed on box[%d]\n", i);
 
-			yy = yvel;
+			yy = vel[1];
 		}
 
 		//collisions with the boxes, simple
@@ -371,7 +451,7 @@ int main()
 #endif
 
 
-		move_camera(xx*movement_time, yy*movement_time, zz*movement_time, tt*time_elapsed, pp*time_elapsed);
+		move_camera(vel[0]*movement_time, vel[1]*movement_time, vel[2]*movement_time, tt*time_elapsed, pp*time_elapsed);
 
 
 		// do camera
